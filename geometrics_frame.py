@@ -6,6 +6,7 @@ Created on FRI Sep 16 07:55:15 2022
 @author: Daniel
 """
 from enum import Enum
+from imp import PY_FROZEN, get_magic
 
 def create_frame():
     pass
@@ -161,34 +162,81 @@ def get_byte_from_hex(n_bytes, hex):
     res.extend(hex_byte)
     return res
 
-class geometrics_frame_input():
-    def __init__(self):
-        pass
-    
-    def get_command(self):
-        res = []
-        id = bytearray.fromhex("F5A0C396")
-        comand = get_byte_from_hex(4,"09")
-        param0 = get_byte_from_hex(4,"09")
-        param1 = get_byte_from_hex(4,"09")
-        reserved = bytearray(12)
-        res.extend(id)
-        res.extend(comand)
-        res.extend(param0)
-        res.extend(param1)
-        res.extend(reserved)
-        return res
 
-temp = geometrics_frame(bytearray(28))
-a = temp.get_data_from_frame()
+def get_command(comand="00", param0="00", param1="00"):
+    res = []
+    id = bytearray.fromhex("F5A0C396")
+    comand = get_byte_from_hex(4,comand)
+    param0 = get_byte_from_hex(4,param0)
+    param1 = get_byte_from_hex(4,param1)
+    reserved = bytearray(12)
+    res.extend(id)
+    res.extend(comand)
+    res.extend(param0)
+    res.extend(param1)
+    res.extend(reserved)
+    return res
 
-def print_res(res):
-    for key in res:
-        print(f"{key}:")
-        if type(res[key]) is type({}):
-            print_res(res[key])
-        else:
-            print(f"{res[key]}")
+def send_hibernate():
+    return get_command("03","01","00")
+
+def send_get_up():
+    return get_command("03","00","00")
+
+def send_reset_cell_heating():
+    return get_command("04","00","00")
+
+def send_reset_laser_locking():
+    return get_command("04","01","00")
+
+def send_reset_larmor_locking():
+    return get_command("04","02","00")
+
+def send_reset_fpga():
+    return get_command("05","00","00")
+
+def send_factory_reset():
+    return get_command("06","00","00")
+
+def send_set_heading_error():
+    return get_command("09","02","00")
+
+def send_set_low_noise():
+    return get_command("09","02","01")
+
+def send_set_individual_sensors():
+    return get_command("0A","00","00")
+
+def send_set_combined_sensors():
+    return get_command("0A","01","00")
+
+def send_save_settings():
+    return get_command("0B","00","00")  
+
+GEOMETRICS_TASK = {
+    "hibernate" : get_command("03","01","00"),
+    "get_up": get_command("03","00","00"),
+    "reset_ch": get_command("04","00","00"),
+    "reset_laser_lock": get_command("04","01","00"),
+    "reset_larmor_lock": get_command("04","02","00"),
+    "fpga_reset": get_command("05","00","00"),
+    "low_heading": get_command("09","02","00"),
+    "low_noise": get_command("09","02","01"),
+    "set_individual": get_command("0A","00","00"),
+    "set_combined": get_command("0A","01","00"),
+    "save_settings": get_command("0B","00","00")
+}
+
+# temp = geometrics_frame(bytearray(28))
+# a = temp.get_data_from_frame()
+
+# def print_res(res):
+#     for key in res:
+#         print(f"{key}:")
+#         if type(res[key]) is type({}):
+#             print_res(res[key])
+#         else:
+#             print(f"{res[key]}")
 
 # print_res(a)
 # print(temp.get_frame_info())
@@ -205,6 +253,9 @@ def print_res(res):
 # for key in c:
 #     print(f"{key}:{c[key]}")
 
-temp2 = geometrics_frame_input()
-print(temp2.get_command())
-print(len(temp2.get_command()))
+# temp2 = geometrics_frame_input()
+# print(temp2.get_command("F0FF","00","00"))
+# print(len(temp2.get_command("AA")))
+
+# print(temp2.send_set_low_noise())
+# print(get_magic())

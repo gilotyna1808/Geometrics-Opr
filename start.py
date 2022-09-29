@@ -17,3 +17,4 @@ def measurment(geo:geometrics, config):
 
 if __name__ == '__main__':
     geo = geometrics()
+    measurment(geo,None)
