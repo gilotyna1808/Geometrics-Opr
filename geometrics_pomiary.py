@@ -136,7 +136,7 @@ def convert_to_mag_status(data):
     return res
 
 def measurement(config):
-    # serial_conection = geometrics_connect(config)
+    serial_conection = geometrics_connect(config)
     # flag_silent = config.load_value_from_config_bool('program','silent')
     timer = config.load_value_from_config_int('program','time_to_new_file')
     data_file = open_file_mag_values(config)
@@ -149,16 +149,13 @@ def measurement(config):
     beg = ''
     # np_convert = np.vectorize(convert)
     while(True):
-        data_from_geo = None
-        with open('test.bin',"rb") as f:
-            data_from_geo = f.read().hex()
-        # data_from_geo = serial_conection.read_all().hex()
+        data_from_geo = serial_conection.read_all().hex()
         #TODO
         data_bin_file.write(bytes.fromhex(data_from_geo))
-        data_bin_file.flush()
         #
         data_from_geo = data_from_geo.split("00000000")
         for data in data_from_geo:
+            data+="00000000"
             if len(data) > 56 and len(data) < 70:
                 while data[0]=="0":
                     data = data[1:]
@@ -169,19 +166,23 @@ def measurement(config):
                 geo_frame = geometrics_frame(bytearray.fromhex(data)).get_data_from_frame()
                 data_buffor.append(convert_to_mag_data(geo_frame))
                 status_buffor.append(convert_to_mag_status(geo_frame))
-        write_to_file(data_file, data_buffor)
-        write_to_file(data_file_status, status_buffor)
-        # if(len(data_buffor)>1000):
-        #     data_buffor = []
-        # now = datetime.now()
-        # if(now.timestamp() - time_last > timer):
-        #     write_to_file(data_file, data_buffor)
-        #     data_buffor = []
-        #     data_file = close_file(data_file)
-        #     data_file = open_file_mag_values(config)
-        #     time_last = now.timestamp()
-        break
-        time.sleep(0.02)
+        if(len(data_buffor)>1000):
+            write_to_file(data_file, data_buffor)
+            write_to_file(data_file_status, status_buffor)
+            data_buffor = []
+            status_buffor = []
+        now = datetime.now()
+        if(now.timestamp() - time_last > timer):
+            write_to_file(data_file, data_buffor)
+            write_to_file(data_file_status, status_buffor)
+            data_buffor = []
+            status_buffor = []
+            data_file = close_file(data_file)
+            # data_file = open_file_mag_values(config)
+            time_last = now.timestamp()
+            data_bin_file.flush()
+            break
+        time.sleep(0.01)
     data_file = close_file(data_file)
     
 if __name__ == '__main__':
