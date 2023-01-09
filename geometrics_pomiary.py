@@ -154,17 +154,17 @@ def convert_to_mag_status_all(data):
 #         "Temp_fpga,Temp_board,Voltage\n"
 
 def convert_to_mag_status_selected(datas):
+    res = ',,,,,,,,'
     for data in datas:
         aux = data['id']['aux_field_id']
         if aux == AUX.AUX_DATA:
             res = ',,,,,,,,'
-            data = datas
             now = datetime.now()
             now_txt = now.strftime("%d/%m/%Y,%H:%M:%S.%f")[:-3]
             res = f"{now_txt},{data['id']['fiducal']},"
             res += f"{data['sys_stat']['system_fault_id']},{data['sys_stat']['non_critical_fault']},{data['sys_stat']['critical_fault']},"
-            res += f"{data['aux_word_0']},{data['aux_word_1']},{data['aux_word_2']}"
-            break
+            res += f"{(data['aux_word_0']/128.0)+25},{(data['aux_word_1']/128.0)+25},{data['aux_word_2']}"
+            return res
     return res
 
 def measurement(config):
@@ -178,6 +178,7 @@ def measurement(config):
     status_buffor = []
     now = datetime.now().timestamp()
     time_last = now
+    time_last_status = now
     beg = ''
     # np_convert = np.vectorize(convert)
     while(True):
@@ -200,13 +201,14 @@ def measurement(config):
                 status_buffor.append(geo_frame)
         if(len(data_buffor)>1000):
             write_to_file(data_file, data_buffor)
-            write_to_file(data_file_status, status_buffor)
+            # write_to_file(data_file_status, status_buffor)
             data_buffor = []
-            status_buffor = []
+            # status_buffor = []
         now = datetime.now()
-        if(now.timestamp() - time_last > 1):
-            write_to_file(data_file_status, [convert_to_mag_status_selected[status_buffor[-10:]]])
+        if(now.timestamp() - time_last_status > 1):
+            write_to_file(data_file_status, [convert_to_mag_status_selected(status_buffor[-30:])])
             status_buffor = []
+            time_last_status = now.timestamp()
         if(now.timestamp() - time_last > timer):
             write_to_file(data_file, data_buffor)
             # write_to_file(data_file_status, status_buffor)
