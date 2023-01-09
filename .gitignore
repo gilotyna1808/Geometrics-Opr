@@ -133,3 +133,5 @@ data/binary_09_01_2023_07_53_44.bin
 data/.~lock.status_09_01_2023_07_53_44.csv#
 test.bin
 tt1
+*.bin
+*.csv
