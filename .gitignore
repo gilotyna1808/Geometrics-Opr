@@ -128,7 +128,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 data/status_09_01_2023_07_53_44.csv
-geometrics_pomiary.py
 data/data_09_01_2023_07_53_44.csv
 data/binary_09_01_2023_07_53_44.bin
 data/.~lock.status_09_01_2023_07_53_44.csv#
