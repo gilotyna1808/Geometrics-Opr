@@ -43,7 +43,7 @@ def open_file_binary(config):
     file.flush()
     return file
 
-def open_file_mag_statuses(config):
+def open_file_mag_statuses_all(config):
     file = None
     now = datetime.now()
     now = now.strftime("%d_%m_%Y_%H_%M_%S")
@@ -55,6 +55,20 @@ def open_file_mag_statuses(config):
         "M0_valid,M0_startup,M0_sensor_fault_id,M0_low_heading_mode,M0_low_noise_mode,M0_regular_mode,M0_no_dead_zone,M0_dead_zone_indicator," +
         "M1_valid,M0_startup,M1_sensor_fault_id,M1_low_heading_mode,M1_low_noise_mode,M1_regular_mode,M1_no_dead_zone,M1_dead_zone_indicator," +
         "X_cmps,Y_cmps,Z_cmps,X_gyro,Y_gyro,Z_gyro,T_gyro,X_accel,Y_accel,Z_accel,T_accel,Temp_fpga,Temp_board,Voltage,Runtime\n"
+        )
+    file.flush()
+    return file
+
+def open_file_mag_statuses_selected(config):
+    file = None
+    now = datetime.now()
+    now = now.strftime("%d_%m_%Y_%H_%M_%S")
+    name = 'status'
+    path = config.load_value_from_config_str('file_dir', 'data_mag_statuses')
+    file = open(f"{path}/{name}_{now}.csv", "w+", encoding="utf-8")
+    file.write("Data,Czas,fuid,"+
+        "system_fault_id,non_critical_fault,critical_fault,"+
+        "Temp_fpga,Temp_board,Voltage\n"
         )
     file.flush()
     return file
@@ -121,7 +135,7 @@ def get_general_status(data):
 
 
 
-def convert_to_mag_status(data):
+def convert_to_mag_status_all(data):
     res = ',,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,'
     now = datetime.now()
     now_txt = now.strftime("%d/%m/%Y,%H:%M:%S.%f")[:-3]
@@ -135,13 +149,31 @@ def convert_to_mag_status(data):
     res += f"{get_general_status(data)}"
     return res
 
+# Data,Czas,fuid,"+
+#         "system_fault_id,non_critical_fault,critical_fault,"+
+#         "Temp_fpga,Temp_board,Voltage\n"
+
+def convert_to_mag_status_selected(datas):
+    for data in datas:
+        aux = data['id']['aux_field_id']
+        if aux == AUX.AUX_DATA:
+            res = ',,,,,,,,'
+            data = datas
+            now = datetime.now()
+            now_txt = now.strftime("%d/%m/%Y,%H:%M:%S.%f")[:-3]
+            res = f"{now_txt},{data['id']['fiducal']},"
+            res += f"{data['sys_stat']['system_fault_id']},{data['sys_stat']['non_critical_fault']},{data['sys_stat']['critical_fault']},"
+            res += f"{data['aux_word_0']},{data['aux_word_1']},{data['aux_word_2']}"
+            break
+    return res
+
 def measurement(config):
     serial_conection = geometrics_connect(config)
     # flag_silent = config.load_value_from_config_bool('program','silent')
     timer = config.load_value_from_config_int('program','time_to_new_file')
     data_file = open_file_mag_values(config)
     data_bin_file = open_file_binary(config)
-    data_file_status = open_file_mag_statuses(config)
+    data_file_status = open_file_mag_statuses_selected(config)
     data_buffor = []
     status_buffor = []
     now = datetime.now().timestamp()
@@ -165,18 +197,21 @@ def measurement(config):
             if len(data) == 56:
                 geo_frame = geometrics_frame(bytearray.fromhex(data)).get_data_from_frame()
                 data_buffor.append(convert_to_mag_data(geo_frame))
-                status_buffor.append(convert_to_mag_status(geo_frame))
+                status_buffor.append(geo_frame)
         if(len(data_buffor)>1000):
             write_to_file(data_file, data_buffor)
             write_to_file(data_file_status, status_buffor)
             data_buffor = []
             status_buffor = []
         now = datetime.now()
+        if(now.timestamp() - time_last > 1):
+            write_to_file(data_file_status, [convert_to_mag_status_selected[status_buffor[-10:]]])
+            status_buffor = []
         if(now.timestamp() - time_last > timer):
             write_to_file(data_file, data_buffor)
-            write_to_file(data_file_status, status_buffor)
+            # write_to_file(data_file_status, status_buffor)
             data_buffor = []
-            status_buffor = []
+            # status_buffor = []
             data_file = close_file(data_file)
             # data_file = open_file_mag_values(config)
             time_last = now.timestamp()
