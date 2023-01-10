@@ -42,6 +42,7 @@ class geometrics_frame():
     """
     def __init__(self, frame:bytearray):
         # Config Frame
+        self.BYTE_SIZE = 8
         self.FRAME_LENGHT = 28
         self.FRAME_ID = 2
         self.SYS_STAT = 2
@@ -60,6 +61,7 @@ class geometrics_frame():
 
         if not self.check_frame():
             raise Exception("Given frame is not valid")
+        self.put_byte_in_order()
 
     def check_frame(self):
         if len(self.frame) != self.FRAME_LENGHT:
@@ -72,6 +74,34 @@ class geometrics_frame():
             return f"Dlugosc: {self.FRAME_LENGHT}, ilosc wiadomosci: {self.NUM_OF_MESSAGES}"
         return ""
 
+    def put_byte_in_order(self):
+        temp_frame = []
+        index = 0
+        temp_frame.extend(reversed(self.frame[index:index+self.FRAME_ID]))
+        index += self.FRAME_ID
+        temp_frame.extend(reversed(self.frame[index:index+self.SYS_STAT]))
+        index += self.SYS_STAT
+        temp_frame.extend(reversed(self.frame[index:index+self.MAG_0_DATA]))
+        index += self.MAG_0_DATA
+        temp_frame.extend(reversed(self.frame[index:index+self.MAG_0_STATUS]))
+        index += self.MAG_0_STATUS
+        temp_frame.extend(reversed(self.frame[index:index+self.MAG_1_STATUS]))
+        index += self.MAG_1_STATUS
+        temp_frame.extend(reversed(self.frame[index:index+self.MAG_1_DATA]))
+        index += self.MAG_1_DATA
+        temp_frame.extend(reversed(self.frame[index:index+self.AUX_WORD_0]))
+        index += self.AUX_WORD_0
+        temp_frame.extend(reversed(self.frame[index:index+self.AUX_WORD_1]))
+        index += self.AUX_WORD_1
+        temp_frame.extend(reversed(self.frame[index:index+self.AUX_WORD_2]))
+        index += self.AUX_WORD_2
+        temp_frame.extend(reversed(self.frame[index:index+self.AUX_WORD_3]))
+        index += self.AUX_WORD_3
+        temp_frame.extend(reversed(self.frame[index:index+self.RESERVED]))
+        index += self.RESERVED
+        self.frame = temp_frame
+
+    #Convert frame to data
     def get_data_from_frame_id(self, message):
         res = {}
         res['mag_0_data_valid'] = get_value_on_bit(message, 0)
@@ -86,7 +116,7 @@ class geometrics_frame():
     
     def get_data_from_status_table(self, message):
         res = {}
-        res["pps_locked"] = get_value_on_bit(message,0)
+        res["pps_locked"] = get_value_on_bit(message, 0)
         res["pps_available"] = get_value_on_bit(message,1)
         res["10mhz_available"] = get_value_on_bit(message,2)
         res["10mhz_locked"] = get_value_on_bit(message,3)
@@ -136,24 +166,38 @@ class geometrics_frame():
 
     def get_data_from_frame(self):
         res = {}
-        ToDelVAR1 = self.frame
-        # print(len(ToDelVAR1))
-        res["id"] = self.get_data_from_frame_id(get_bit_array(ToDelVAR1[0:2]))
-        res["sys_stat"] = self.get_data_from_status_table(get_bit_array(ToDelVAR1[2:4]))
-        res["mag_0_data"] = self.get_mag_data(get_bit_array(ToDelVAR1[4:8]))
-        res["mag_0_status"] = self.get_data_from_mag_status_table(get_bit_array(ToDelVAR1[8:10]))
-        res["mag_1_status"] = self.get_data_from_mag_status_table(get_bit_array(ToDelVAR1[10:12]))
-        res["mag_1_data"] = self.get_mag_data(get_bit_array(ToDelVAR1[12:16]))
-        res["aux_word_0"] = get_int_from_byte_array(ToDelVAR1,16,18)
-        res["aux_word_1"] = get_int_from_byte_array(ToDelVAR1,18,20)
-        res["aux_word_2"] = get_int_from_byte_array(ToDelVAR1,20,22)
-        res["aux_word_3"] = get_int_from_byte_array(ToDelVAR1,22,24)
-        res["reserved"] = get_int_from_byte_array(ToDelVAR1,24,28)
+        frame = self.frame
+        res["id"] = self.get_data_from_frame_id(get_bit_array(frame[0:2]))
+        res["sys_stat"] = self.get_data_from_status_table(get_bit_array(frame[2:4]))
+        res["mag_0_data"] = self.get_mag_data(get_bit_array(frame[4:8]))
+        res["mag_0_status"] = self.get_data_from_mag_status_table(get_bit_array(frame[8:10]))
+        res["mag_1_status"] = self.get_data_from_mag_status_table(get_bit_array(frame[10:12]))
+        res["mag_1_data"] = self.get_mag_data(get_bit_array(frame[12:16]))
+        res["aux_word_0"] = get_int_from_byte_array(frame,16,18)
+        res["aux_word_1"] = get_int_from_byte_array(frame,18,20)
+        res["aux_word_2"] = get_int_from_byte_array(frame,20,22)
+        res["aux_word_3"] = get_int_from_byte_array(frame,22,24)
+        res["reserved"] = get_int_from_byte_array(frame,24,28)
         return res
     
     def get_mag_data(self, message):
-        return get_int_from_bit_array(message,0,len(message)) * 50 * 10e-6
+        return get_int_from_bit_array(message,0,len(message)) * 50 * 1e-6
+    
+    def get_running_mode_mask(running_mode:str):
+        res = [False,False,False,False,False]
+        if "Built_in_tests" in running_mode:
+            res[0]=True
+        if "Calibration" in running_mode:
+            res[1]=True
+        if "Magnetometer" in running_mode:
+            res[2]=True
+        if "Startup" in running_mode:
+            res[3]=True
+        if "Hibernate" in running_mode:
+            res[4]=True
+        return res
 
+#Comands
 def get_byte_from_hex(n_bytes, hex):
     hex_byte = bytearray.fromhex(hex)
     l = len(hex_byte)
@@ -225,53 +269,3 @@ GEOMETRICS_TASK = {
     "set_combined": get_command("0A","01","00"),
     "save_settings": get_command("0B","00","00")
 }
-
-testList = []
-testList.append(bytearray.fromhex('C0F30400D277863504000400892CA136610A98069105570000000000'))
-testList.append(bytearray.fromhex('C1E30400CD7186350400040073F8A0369F41C50148F8082500000000'))
-testList.append(bytearray.fromhex('C2D30400480386350400040096AEA0360A0007000000082500000000'))
-testList.append(bytearray.fromhex('C3CB0400783686350400040058E8A036C6FD4DFE35FF000000000000'))
-testList.append(bytearray.fromhex('C4FB04000F4C8B35040004007C56A6360A002C1531420B0000000000'))
-testList.append(bytearray.fromhex('C6E30400B44F953504000400EE7CB0363841F9016CF8082500000000'))
-testList.append(bytearray.fromhex('C7D30400509A94350400040021B0AF360D000600FCFF082500000000'))
-testList.append(bytearray.fromhex('C8DB04000EBE933504000400B8BFAE3649218925610A980600000000'))
-
-for x in testList:
-    z = geometrics_frame(x).get_data_from_frame()
-    for y in z:
-        print(f"{y}: {z[y]}")
-    print()
-# lol = bytearray.fromhex('C0F30400D277863504000400892CA136610A98069105570000000000')
-# print(f'{lol}')
-# temp = geometrics_frame(lol)
-# a = temp.get_data_from_frame()
-# print(f'{a}')
-# def print_res(res):
-#     for key in res:
-#         print(f"{key}:")
-#         if type(res[key]) is type({}):
-#             print_res(res[key])
-#         else:
-#             print(f"{res[key]}")
-
-# print_res(a)
-# print(temp.get_frame_info())
-# a = temp.get_data_from_frame_id()
-# b = temp.get_data_from_status_table()
-# c = temp.get_data_from_mag_status_table()
-
-# for key in a:
-#     print(f"{key}:{a[key]}")
-
-# for key in b:
-#     print(f"{key}:{b[key]}")
-
-# for key in c:
-#     print(f"{key}:{c[key]}")
-
-# temp2 = geometrics_frame_input()
-# print(temp2.get_command("F0FF","00","00"))
-# print(len(temp2.get_command("AA")))
-
-# print(temp2.send_set_low_noise())
-# print(get_magic())
