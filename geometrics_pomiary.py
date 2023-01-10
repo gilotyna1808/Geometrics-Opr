@@ -215,10 +215,10 @@ def measurement(config):
             data_buffor = []
             # status_buffor = []
             data_file = close_file(data_file)
-            # data_file = open_file_mag_values(config)
+            data_file = open_file_mag_values(config)
             time_last = now.timestamp()
             data_bin_file.flush()
-            break
+            # break
         time.sleep(0.01)
     data_file = close_file(data_file)
     
