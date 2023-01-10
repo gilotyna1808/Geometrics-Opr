@@ -97,7 +97,8 @@ def convert_to_mag_status_selected(datas:list):
     res = ',,,,,,,,'
     for data in datas:
         aux = data['id']['aux_field_id']
-        if aux == AUX.AUX_DATA:
+        fuid = data['id']['fiducal']
+        if aux == AUX.AUX_DATA and fuid % 10 == 0:
             res = ',,,,,,,,'
             now = datetime.now()
             now_txt = now.strftime("%d/%m/%Y,%H:%M:%S.%f")[:-3]
@@ -106,3 +107,15 @@ def convert_to_mag_status_selected(datas:list):
             res += f"{(data['aux_word_0']/128.0)+25},{(data['aux_word_1']/128.0)+25},{data['aux_word_2']}"
             return res
     return res
+
+def convert_to_mag_status_to_server(datas:list):
+    #datetime,Temp_fpga,Temp_board
+    for data in datas:
+        aux = data['id']['aux_field_id']
+        fuid = data['id']['fiducal']
+        if aux == AUX.AUX_DATA and fuid % 10 == 0:
+            res = ',,'
+            now = datetime.now().timestamp()
+            res = f"{now},{(data['aux_word_0']/128.0)+25},{(data['aux_word_1']/128.0)+25}"
+            return res
+    return None

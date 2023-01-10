@@ -9,14 +9,20 @@ Created on Thu Jan 05 10:49:58 2022
 import serial
 import time
 import numpy as np
+import socket
+import os
 from datetime import datetime
+from threading import Thread
 from geometrics_frame import geometrics_frame
 from geometrics_config import geometrics_config
-from geometrics_convert import convert_to_mag_status_selected, convert_to_mag_data
+from geometrics_convert import convert_to_mag_status_selected, convert_to_mag_data, convert_to_mag_status_to_server
 from geometrics_files import open_geometrics_binary_file, open_geometrics_mag_data_file
 from geometrics_files import open_file_mag_statuses_selected, write_to_file, close_file
 
-SERIAL_TIME_SLEEP = 0.1
+SERIAL_TIME_SLEEP = 0.05
+
+#Global
+message = None
 
 def geometrics_connect(config:geometrics_config):
     ser = serial.Serial()
@@ -71,20 +77,23 @@ def measurement(config:geometrics_config):
         data_from_geo = data_from_geo.split("00000000")
         #Append correct frames to buffor
         data_buffor.extend(x for x in read_frames(data_from_geo) if x is not None)
-        #Write to file if buffor is full        
-        if(len(data_buffor)>1000):
-            write_to_file(data_file, convert_frames(data_buffor))
-            data_buffor = []
-            if data_bin_file is not None:data_bin_file.flush()
+        
         now = datetime.now()
         #Write status to file after selected time
         if(now.timestamp() - time_last_status > time_to_new_status):
             if(len(data_buffor) > 30):
                 write_to_file(data_file_status, [convert_to_mag_status_selected(data_buffor[-30:])])
+                message = convert_to_mag_status_to_server(data_buffor[-30:])
+                Thread(target=send_data_to_server(message), daemon=True).start()
             time_last_status = now.timestamp()
+        #Write to file if buffor is full        
+        if(len(data_buffor)>250):
+            write_to_file(data_file, convert_frames(data_buffor))
+            data_buffor = []
+            if data_bin_file is not None:data_bin_file.flush()
         #Write to file and create new file
         if(now.timestamp() - time_last > time_to_new_file):
-            write_to_file(data_file, data_buffor)
+            if len(data_buffor): write_to_file(data_file, convert_frames(data_buffor))
             data_buffor = []
             data_file = close_file(data_file)
             data_file = open_geometrics_mag_data_file(data_file_path)
@@ -94,7 +103,26 @@ def measurement(config:geometrics_config):
     data_file = close_file(data_file)
     data_bin_file = close_file(data_bin_file)
     status_file = close_file(status_file_path)
-    
+
+def send_data_to_server(message):
+    if message is not None:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+            server_addres = ("192.168.70.130", 4447)
+            sock.sendto(f"data,{message}".encode(), server_addres)
+        except Exception as ex:
+            pass
+
 if __name__ == '__main__':
-    config = geometrics_config()
-    measurement(config)
+    pid = str(os.getpid())
+    pidfile = "/tmp/geometrics_rasp.pid"
+    if os.path.isfile(pidfile):
+        print(f"{pidfile} already exists, exiting")
+        sys.exit()
+    open(pidfile, 'w').write(pid)
+    try:
+        config = geometrics_config()
+        measurement(config)
+    finally:
+        print("STOP")
+        os.unlink(pidfile)
