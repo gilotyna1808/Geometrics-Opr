@@ -7,9 +7,9 @@ def convert_to_mag_data(data:dict):
     result = ',,,,,,'
     now = datetime.now()
     now_txt = now.strftime("%d/%m/%Y,%H:%M:%S.%f")[:-3]
-    result =  f"{now_txt},{data['id']['fiducal']}"
-    result += f"{data['id']['mag_0_data_valid']}"
-    result += f"{data['id']['mag_1_data_valid']}"
+    result =  f"{now_txt},{data['id']['fiducal']},"
+    result += f"{data['id']['mag_0_data_valid']},"
+    result += f"{data['id']['mag_1_data_valid']},"
     result += f"{data['mag_0_data']:.4f},{data['mag_1_data']:.4f}"
     return result
 
