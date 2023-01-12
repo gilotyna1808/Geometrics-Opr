@@ -104,7 +104,7 @@ def convert_to_mag_status_selected(datas:list):
             now_txt = now.strftime("%d/%m/%Y,%H:%M:%S.%f")[:-3]
             res = f"{now_txt},{data['id']['fiducal']},"
             res += f"{data['sys_stat']['system_fault_id']},{data['sys_stat']['non_critical_fault']},{data['sys_stat']['critical_fault']},"
-            res += f"{(data['aux_word_0']/128.0)+25},{(data['aux_word_1']/128.0)+25},{data['aux_word_2']}"
+            res += f"{43+((data['aux_word_0']-2568)/10)},{36.6 -((data['aux_word_1']-1790)/10)},{data['aux_word_2']}"
             return res
     return res
 
@@ -116,6 +116,6 @@ def convert_to_mag_status_to_server(datas:list):
         if aux == AUX.AUX_DATA and fuid % 10 == 0:
             res = ',,'
             now = datetime.now().timestamp()
-            res = f"{now},{(data['aux_word_0']/128.0)+25},{(data['aux_word_1']/128.0)+25}"
+            res += f"{43+((data['aux_word_0']-2568)/10)},{36.6 -((data['aux_word_1']-1790)/10)},{data['aux_word_2']}"
             return res
     return None
