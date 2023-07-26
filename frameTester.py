@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from geometrics_frame import geometrics_frame
 
 testList = []
@@ -154,9 +155,20 @@ testList = []
 # testList.append(bytearray.fromhex('3CFC040040E0DD3B040004004B451B3B0A002C1531420B0000000000'))
 # testList.append(bytearray.fromhex('3EE404005C0C0F3C04000400D599473BCC18A4004839661200000000'))
 # testList.append(bytearray.fromhex('40DC0400E8F6173C040004002EC04E3B4B218B25120AF40600000000'))
-# testList.append(bytearray.fromhex('42F404001283853B0400040022E5CA3A120AF4068F05C80000000000'))
 
-testList.append(bytearray.fromhex('4fd30400f64f81380400040080dcb23809000800feff6a1800000000'))
+# testList.append(bytearray.fromhex('f5120400000000000b000b00000000000c000800ffffa33d00000000'))
+# testList.append(bytearray.fromhex('f61a0400000000000b000b00000000004b218e25c30a250600000000'))
+# testList.append(bytearray.fromhex('f72a04000000000009000b00000000000053006e0085006e00000000'))
+# testList.append(bytearray.fromhex('f8320400000000000b000b0000000000c20a25069005dd0000000000'))
+# testList.append(bytearray.fromhex('f92204000000000003000b00000000003a172e00d9bea33d00000000'))
+# testList.append(bytearray.fromhex('fa1204000000000003000b00000000000b000a000000a33d00000000'))
+# testList.append(bytearray.fromhex('fb0a04000000000003000900000000005fffd9fdcefd000000000000'))
+# testList.append(bytearray.fromhex('fc3a04000000000003000b00000000000a002c1531420b0000000000'))
+# testList.append(bytearray.fromhex('fd020400000000000b000b00000000007f10cf093415210b00000000'))
+# testList.append(bytearray.fromhex('fe220400000000000b000b00000000001a173400dbbea33d00000000'))
+
+# print(bin(10)[2:].zfill(8))
+testList.append(bytearray.fromhex('42F404001283853B0400040022E5CA3A120AF4068F05C80000000000'))
 
 for x in testList:
     z = geometrics_frame(x).get_data_from_frame()

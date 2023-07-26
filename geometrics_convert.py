@@ -116,6 +116,6 @@ def convert_to_mag_status_to_server(datas:list):
         if aux == AUX.AUX_DATA and fuid % 10 == 0:
             res = ',,'
             now = datetime.now().timestamp()
-            res += f"{43+((data['aux_word_0']-2568)/10)},{36.6 -((data['aux_word_1']-1790)/10)},{data['aux_word_2']}"
+            res = f"{now},{43+((data['aux_word_0']-2568)/10)},{36.6 -((data['aux_word_1']-1790)/10)}"
             return res
     return None

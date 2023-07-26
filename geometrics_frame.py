@@ -11,10 +11,12 @@ def create_frame():
     pass
 
 def get_bit_array(array:bytearray):
-    bitarray = []
-    for byte in array:
-        bitarray.extend('{:08b}'.format(byte))
-    return bitarray
+    size = len(array)
+    return bin(int.from_bytes(array,"little"))[2:].zfill(size*8)
+    # bitarray = []
+    # for byte in array:
+    #     bitarray.extend('{:08b}'.format(byte))
+    # return bitarray
 
 def get_value_on_bit(message, bit:int):
     if message[bit] == '0':
@@ -22,10 +24,10 @@ def get_value_on_bit(message, bit:int):
     return True
 
 def get_int_from_bit_array(array, bit_start, bit_stop):
-    return int("".join(array[bit_start:bit_stop]),2)
+    return int(array[bit_start:bit_stop],2)
 
-def get_int_from_byte_array(array, bit_start, bit_stop):
-    return int.from_bytes(array[bit_start:bit_stop],"big")
+def get_int_from_byte_array(array, byte_start, byte_stop):
+    return int.from_bytes(array[byte_start:byte_stop],"little")
 
 class aux_field_name(Enum):
     EMPTY1 = 0
@@ -61,7 +63,6 @@ class geometrics_frame():
 
         if not self.check_frame():
             raise Exception("Given frame is not valid")
-        self.put_byte_in_order()
 
     def check_frame(self):
         if len(self.frame) != self.FRAME_LENGHT:
@@ -74,33 +75,6 @@ class geometrics_frame():
             return f"Dlugosc: {self.FRAME_LENGHT}, ilosc wiadomosci: {self.NUM_OF_MESSAGES}"
         return ""
 
-    def put_byte_in_order(self):
-        temp_frame = []
-        index = 0
-        temp_frame.extend(reversed(self.frame[index:index+self.FRAME_ID]))
-        index += self.FRAME_ID
-        temp_frame.extend(reversed(self.frame[index:index+self.SYS_STAT]))
-        index += self.SYS_STAT
-        temp_frame.extend(reversed(self.frame[index:index+self.MAG_0_DATA]))
-        index += self.MAG_0_DATA
-        temp_frame.extend(reversed(self.frame[index:index+self.MAG_0_STATUS]))
-        index += self.MAG_0_STATUS
-        temp_frame.extend(reversed(self.frame[index:index+self.MAG_1_STATUS]))
-        index += self.MAG_1_STATUS
-        temp_frame.extend(reversed(self.frame[index:index+self.MAG_1_DATA]))
-        index += self.MAG_1_DATA
-        temp_frame.extend(reversed(self.frame[index:index+self.AUX_WORD_0]))
-        index += self.AUX_WORD_0
-        temp_frame.extend(reversed(self.frame[index:index+self.AUX_WORD_1]))
-        index += self.AUX_WORD_1
-        temp_frame.extend(reversed(self.frame[index:index+self.AUX_WORD_2]))
-        index += self.AUX_WORD_2
-        temp_frame.extend(reversed(self.frame[index:index+self.AUX_WORD_3]))
-        index += self.AUX_WORD_3
-        temp_frame.extend(reversed(self.frame[index:index+self.RESERVED]))
-        index += self.RESERVED
-        self.frame = temp_frame
-
     #Convert frame to data
     def get_data_from_frame_id(self, message):
         res = {}
@@ -112,7 +86,7 @@ class geometrics_frame():
     
 
     def get_aux_field(self,message,start_bit=2,stop_bit=5):
-        return aux_field_name(int("".join(message[start_bit:stop_bit]),2))
+        return aux_field_name(int(message[start_bit:stop_bit],2))
     
     def get_data_from_status_table(self, message):
         res = {}
@@ -169,10 +143,10 @@ class geometrics_frame():
         frame = self.frame
         res["id"] = self.get_data_from_frame_id(get_bit_array(frame[0:2]))
         res["sys_stat"] = self.get_data_from_status_table(get_bit_array(frame[2:4]))
-        res["mag_0_data"] = self.get_mag_data(get_bit_array(frame[4:8]))
+        res["mag_0_data"] = self.get_mag_data(frame[4:8])
         res["mag_0_status"] = self.get_data_from_mag_status_table(get_bit_array(frame[8:10]))
         res["mag_1_status"] = self.get_data_from_mag_status_table(get_bit_array(frame[10:12]))
-        res["mag_1_data"] = self.get_mag_data(get_bit_array(frame[12:16]))
+        res["mag_1_data"] = self.get_mag_data(frame[12:16])
         res["aux_word_0"] = get_int_from_byte_array(frame,16,18)
         res["aux_word_1"] = get_int_from_byte_array(frame,18,20)
         res["aux_word_2"] = get_int_from_byte_array(frame,20,22)
@@ -181,7 +155,7 @@ class geometrics_frame():
         return res
     
     def get_mag_data(self, message):
-        return get_int_from_bit_array(message,0,len(message)) * 50 * 1e-6
+        return int.from_bytes(message,"little") * 50 * 1e-6
     
     def get_running_mode_mask(running_mode:str):
         res = [False,False,False,False,False]

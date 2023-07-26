@@ -11,6 +11,7 @@ import time
 import numpy as np
 import socket
 import os
+import sys
 from datetime import datetime
 from threading import Thread
 from geometrics_frame import geometrics_frame
@@ -21,9 +22,6 @@ from geometrics_files import open_file_mag_statuses_selected, write_to_file, clo
 
 SERIAL_TIME_SLEEP = 0.05
 
-#Global
-message = None
-
 def geometrics_connect(config:geometrics_config):
     ser = serial.Serial()
     ser.port = config.load_value_from_config_str('rs232_settings','port')
@@ -33,11 +31,16 @@ def geometrics_connect(config:geometrics_config):
     return ser
 
 def read_frame(frame):
+    #Add last 4 bytes
     frame += "00000000"
+    #Check if frame is longer than 28 bytes
     if len(frame) > 56 and len(frame) < 70:
+    #Remove all leading zeros
                 while frame[0]=="0":
                     frame = frame[1:]
+    #Check if frame is shorter than 28 bytes
     if len(frame) < 56 and len(frame) > 42:
+        #Add 0 to end of frame 
         while len(frame) < 56:
             frame += "0"
     if len(frame) == 56:
@@ -114,15 +117,21 @@ def send_data_to_server(message):
             pass
 
 if __name__ == '__main__':
+    #Get pid number of this process
     pid = str(os.getpid())
+    #Localization of file with pid number
     pidfile = "/tmp/geometrics_rasp.pid"
+    #Check if measurement process is alredy running
     if os.path.isfile(pidfile):
         print(f"{pidfile} already exists, exiting")
         sys.exit()
     open(pidfile, 'w').write(pid)
     try:
+    #Load config
         config = geometrics_config()
+    #Start measurement
         measurement(config)
+    #Delete file with pid number
     finally:
         print("STOP")
         os.unlink(pidfile)
